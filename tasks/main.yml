@@ -1,0 +1,74 @@
+---
+- name: ensure the local kickstart location exists
+  file:
+    path: /tmp/KS
+    state: directory
+
+- name: when the kickstart will be hosted by an nginx container
+  block:
+    - name: start a nginx container to house KS
+      become: yes
+      docker_container:
+        name: nginxKS
+        image: nginx
+        volumes:
+          - /tmp/KS:/usr/share/nginx/html:Z
+        ports:
+          - 80:80
+#  when: ks.use_docker == "yes"
+
+- name: get xml information of {{ vm.network.name }} network
+  become: yes
+  virt_net:
+    name: "{{ vm.network.name }}"
+    command: get_xml
+  register: network_xml
+
+- name: parse the xml to get the host ip address for {{ vm.network.name }}
+  xml:
+    xmlstring: "{{ network_xml.get_xml }}"
+    xpath: /network/ip
+    content: attribute
+    attribute: address
+  register: xmlresp
+
+- name: save the host ip address for {{ vm.network.name }}
+  set_fact:
+    host_ip: "{{ xmlresp.matches.0.ip.address }}"
+
+- name: template out the KS in specified nginx location
+  template:
+    src: "{{ ks.name }}"
+    dest: /tmp/KS/ks.cfg
+
+# create VM
+- name: install {{ vm.name }} from Kickstart
+  command: >
+    virt-install 
+    --name {{ vm.name }} 
+    --memory {{ vm.memory }} 
+    --vcpus {{ vm.vcpus }} 
+    --disk size={{ vm.disk.size }},pool={{ vm.disk.pool }} 
+    --network network={{ vm.network.name }} 
+    --location {{ iso.location }}/{{ iso.name }} 
+    --extra-args "ks=http://{{ host_ip }}/ks.cfg" 
+    --os-type linux --noautoconsole
+  become: yes
+
+- name: wait for the VM to build and be stopped
+  virt:
+    name: "{{ vm.name }}"
+    command: status
+  register: result
+  until: result.status.find("shutdown") != -1
+  retries: 180
+  delay: 5
+  become: yes
+
+- name: remove the container if used
+  block:
+    - name: stop and remove the container
+      become: yes
+      docker_container:
+        name: nginxKS
+        state: absent

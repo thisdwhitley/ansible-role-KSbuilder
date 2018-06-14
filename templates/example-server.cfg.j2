@@ -1,0 +1,36 @@
+# config
+install
+cmdline
+skipx
+reboot
+cdrom
+eula --agreed
+firstboot --disable
+logging --level=info
+
+# authentication
+auth  --useshadow  --passalgo=sha512
+rootpw --iscrypted {{ ks_root_password }}
+user --name=ansible --groups=wheel --iscrypted --password="{{ ks_ansible_password }}"
+firewall --enabled --service=ssh
+selinux --enforcing
+
+# localazation
+lang en_US.UTF-8
+keyboard --vckeymap=us --xlayouts='us'
+timezone America/New_York --isUtc
+
+# network
+network  --bootproto=dhcp --device=ens3 --ipv6=disable --activate
+network  --bootproto=dhcp --hostname={{ vm.name }}
+
+# disks
+bootloader --append=" crashkernel=auto" --location=mbr
+clearpart --all --initlabel
+autopart --type=lvm
+
+%packages
+@core
+chrony
+kexec-tools
+%end
