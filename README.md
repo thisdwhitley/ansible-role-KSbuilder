@@ -104,8 +104,6 @@ currently no sanity checking:
     * I should work in the ability to specify the use of the container...in due
       time
 
-This is a lot to process, but is probably easier to understand through looking
-at the example playbook below.
 
 Example Playbook
 ----------------
