@@ -1,12 +1,13 @@
 Ansible Role: KVMbuilder
 ========================
+
 The idea of this role is to build a system based on a variables passed to the
 role in addition to a full binary ISO of an installation media and a kickstart
 file.
 
 I prefer to pass the variables "into" the role from the playbook versus by
 includeing variable files.  This is because I hope to make the role usable by
-other roles.  I don't know if this logic makes sense or not, but I am 
+other roles.  I don't know if this logic makes sense or not, but I am
 essentially attempting to remove the variables from the role itself.  (Maybe I
 should at least include defaults that simply don't work?  I think that if I put
 them in a file in the repo, then others will assume that is where they should
@@ -29,22 +30,25 @@ this role will be used in other roles...
 
 Important Notes
 ---------------
+
 * This is currently developed to be used on a system locally.  In order to use
   it with Tower or AWX will take some refactoring
 * This role is far from idempotent at this point.  During testing I have found
   the following commands helpful to clean up:
 
-      sudo docker rm -f nginxKS; 
-      sudo rm -vfr /tmp/KS; 
-      sudo virsh destroy <vm.name>; 
-      sudo virsh undefine <vm.name> --remove-all-storage 
+      sudo docker rm -f nginxKS;
+      sudo rm -vfr /tmp/KS;
+      sudo virsh destroy <vm.name>;
+      sudo virsh undefine <vm.name> --remove-all-storage
 
 * My example playbook prompts the user for passwords to use in the VM...sort of
   breaking unattended automation, but that's how I do it right now.
 
 Requirements
 ------------
+
 I couldn't escape a few requirements:
+
 * **docker**:  Currently this role is spinning up a nginx container in order to
   house the kickstart file.  I considered doing things like building a custom
   ISO with the KS file, but figured I'd just spin up a container because,
@@ -64,14 +68,16 @@ I couldn't escape a few requirements:
 
 Role Variables
 --------------
+
 All of these variables should be considered **required** however, it will
 depend greatly on how you set up your kickstart file.  Just know that there is
 currently no sanity checking:
-* `ks_root_password` 
+
+* `ks_root_password`
   * this is needed for the kickstart template.  You can provide it securely in
     any number of ways such as by using a vault or by prompting for it in your
     playbook (see example below).  Keep in mind that this is the root password for your new VM
-* `ks_ansible_password` 
+* `ks_ansible_password`
   * this is only needed if you creata an ansible user in your kickstart
     template.  I tend to do this.
 * `vm` *I've created a bit of a nested list here so that the variables can be
@@ -87,7 +93,7 @@ currently no sanity checking:
     * the number of VCPUs assigned to the VM
   * `memory`
     * the amount of memory assigned to the VM ***(in MB)***
-  * ` network` *another layer, but with the idea that I could add IP info, etc*
+  * `network` *another layer, but with the idea that I could add IP info, etc*
     * `name`
       * the libvirt network the VM will be on
 * `iso`
@@ -105,9 +111,9 @@ currently no sanity checking:
     * I should work in the ability to specify the use of the container...in due
       time
 
-
 Example Playbook
 ----------------
+
 Playbook with configuration options specified:
 
 ```yaml
@@ -145,19 +151,21 @@ Playbook with configuration options specified:
         use_container: yes
 
 ```
+
 This is also illustrated in the included file `example-KVMbuilder.yml` playbook
 in this role.
 
 To-do
 -----
+
 * I need to figure out the best way to "include" this role in other roles.  I'm
-  imagining this role as a part of other roles, such as to create a Satellite 
+  imagining this role as a part of other roles, such as to create a Satellite
   server.  So look into [requirements.yml](https://docs.ansible.com/ansible/latest/reference_appendices/galaxy.html).
   * **UPDATE:** I have included a fairly generic `meta/main.yml` file which
     allows for something similar to:
 
         ansible-galaxy install -p ./roles -r requirements.yml
-      
+
     with `requirements.yml` containing:
 
         ---
@@ -168,12 +176,14 @@ To-do
 
 References
 ----------
+
 * [rickmanley-nc's deploy in satellite repo](https://github.com/rickmanley-nc/satellite)
 * [bhirsch70's ansible-prvsn-libvirt-vm role](https://github.com/RedHatGov/Instant-Demo/tree/master/ansible-prvsn-libvirt-vm)
 * [toshywoshy's work](https://github.com/toshywoshy/ansible-role-vminstaller)
 
 License
 -------
+
 Red Hat, the Shadowman logo, Ansible, and Ansible Tower are trademarks or
 registered trademarks of Red Hat, Inc. or its subsidiaries in the United
 States and other countries.
