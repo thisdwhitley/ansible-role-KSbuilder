@@ -24,7 +24,8 @@ At a high level, this role does the following:
    180 times for a total of 15 minutes before considered failed)
 6. Stop the nginx container
 
-The result is a freshly built, but shut off, VM.
+The result is a freshly built, but shut off, VM.  The longterm vision is that
+this role will be used in other roles...
 
 Important Notes
 ---------------
@@ -152,6 +153,18 @@ To-do
 * I need to figure out the best way to "include" this role in other roles.  I'm
   imagining this role as a part of other roles, such as to create a Satellite 
   server.  So look into [requirements.yml](https://docs.ansible.com/ansible/latest/reference_appendices/galaxy.html).
+  * **UPDATE:** I have included a fairly generic `meta/main.yml` file which
+    allows for something similar to:
+
+        ansible-galaxy install -p ./roles -r requirements.yml
+      
+    with `requirements.yml` containing:
+
+        ---
+        # get the builder role from gitlab
+        - src: https://gitlab.com/dwhitley/ansible-role-KVMbuilder.git
+          scm: git
+          name: KVMbuilder
 
 References
 ----------
