@@ -2,7 +2,7 @@
 dependencies: []
 
 galaxy_info:
-  author: dwhitley
+  author: thisdwhitley
   description: build a KVM (libvirt) VM via kickstart + ISO
   license: license (MIT)
   min_ansible_version: 2.4

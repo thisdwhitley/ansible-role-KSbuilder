@@ -1,5 +1,5 @@
-Ansible Role: KVMbuilder
-========================
+Ansible Role: KSbuilder
+=======================
 
 The idea of this role is to build a system based on a variables passed to the
 role in addition to a full binary ISO of an installation media and a kickstart
@@ -133,7 +133,7 @@ Playbook with configuration options specified:
       confirm: yes
       salt_size: 7
   roles:
-    - role: KVMbuilder
+    - role: KSbuilder
       vm:
         name: minimal
         disk:
@@ -152,9 +152,6 @@ Playbook with configuration options specified:
 
 ```
 
-This is also illustrated in the included file `example-KVMbuilder.yml` playbook
-in this role.
-
 To-do
 -----
 
@@ -169,10 +166,10 @@ To-do
     with `requirements.yml` containing:
 
         ---
-        # get the builder role from gitlab
-        - src: https://gitlab.com/dwhitley/ansible-role-KVMbuilder.git
+        # get the builder role from github
+        - src: https://github.com/thisdwhitley/ansible-role-KSbuilder.git
           scm: git
-          name: KVMbuilder
+          name: KSbuilder
 
 References
 ----------
