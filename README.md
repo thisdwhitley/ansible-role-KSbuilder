@@ -93,6 +93,8 @@ currently no sanity checking:
     * the number of VCPUs assigned to the VM
   * `memory`
     * the amount of memory assigned to the VM ***(in MB)***
+  * `ip`
+    * the IP address that will be set on the VM
   * `network` *another layer, but with the idea that I could add IP info, etc*
     * `name`
       * the libvirt network the VM will be on
@@ -141,6 +143,7 @@ Playbook with configuration options specified:
           size: 15
         vcpus: 2
         memory: 512
+        ip: 192.168.1.2
         network:
           name: default # this is the libvirt network the vm will be on
       iso:
