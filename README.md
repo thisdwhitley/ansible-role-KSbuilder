@@ -24,9 +24,14 @@ At a high level, this role does the following:
 5. Wait for the installation to finish (currently checking every 5 seconds,
    180 times for a total of 15 minutes before considered failed)
 6. Stop the nginx container
+7. Inject ssh key for root into the shut off system (installing packages if
+   needed)
+8. Power on the VM
+9. Add it to an *allVMs* group for use in future plays
 
-The result is a freshly built, but shut off, VM.  The longterm vision is that
-this role will be used in other roles...
+The result is a freshly built VM populated with the ssh key of the user running
+the role (for root login).  The longterm vision is that this role will be used 
+in other roles...
 
 Important Notes
 ---------------

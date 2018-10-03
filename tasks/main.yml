@@ -72,3 +72,49 @@
       docker_container:
         name: nginxKS
         state: absent
+
+- name: install requisite packages for virt-customize
+  become: yes
+  package:
+    name: "{{ item }}"
+    state: installed
+  with_items:
+    - libguestfs
+    - libguestfs-tools
+
+- name: get the disk location for the new VM
+  become: yes
+  shell: >
+    virsh domblklist {{ vm.name }} | awk '/qcow2/ {print $NF}'
+  register: vm_disk
+
+- name: inject ssh key w/ virt-customize
+  become: yes
+  command: >
+    virt-customize
+    --add {{ vm_disk.stdout }}
+    --ssh-inject root:string:"{{ lookup('file', '~/.ssh/id_rsa.pub') }}"
+    --run-command 'chcon -R unconfined_u:object_r:ssh_home_t:s0 /root/.ssh/'
+
+- name: Start the VM
+  become: yes
+  command: virsh start {{ vm.name }}
+
+- name: Wait for SSH to come up on the new VM
+  wait_for:
+    host: "{{ vm.ip }}"
+    port: 22
+    delay: 1
+    timeout: 300
+
+- name: add this VM to a "allVMs" group for future plays
+  add_host:
+    name: "{{ vm.name }}"
+    ansible_host: "{{ vm.ip }}"
+    ansible_user: root
+    ansible_ssh_extra_args: "-o StrictHostKeyChecking=no"
+    groups: allVMs
+
+- name: output IPinfo
+  debug:
+    msg: "now you can perform the following: ssh root@{{ vm.ip }}"
