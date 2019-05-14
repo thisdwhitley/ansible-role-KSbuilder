@@ -1,11 +1,9 @@
 ---
 - name: install some required Python modules
+  become: true
   pip:
-    name: "{{ item }}"
+    name: ['docker', 'lxml']
     state: present
-  with_items:
-    - docker
-    - lxml
 
 - name: ensure the local kickstart location exists
   file:
