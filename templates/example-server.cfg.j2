@@ -10,8 +10,6 @@ logging --level=info
 
 # authentication
 auth  --useshadow  --passalgo=sha512
-rootpw --iscrypted {{ ks_root_password }}
-user --name=ansible --groups=wheel --iscrypted --password="{{ ks_ansible_password }}"
 firewall --enabled --service=ssh
 selinux --enforcing
 
@@ -21,8 +19,8 @@ keyboard --vckeymap=us --xlayouts='us'
 timezone America/New_York --isUtc
 
 # network
-network  --bootproto=dhcp --device=ens3 --ipv6=disable --activate
-network  --bootproto=dhcp --hostname={{ vm.name }}
+network  --bootproto=static --device=ens3 --gateway={{ host_ip }} --nameserver={{ host_ip }} --ip={{ vm.ip }} --netmask=255.255.255.0 --ipv6=disable --activate
+network --hostname={{ vm.name }}
 
 # disks
 bootloader --append=" crashkernel=auto" --location=mbr
