@@ -8,6 +8,20 @@ eula --agreed
 firstboot --disable
 logging --level=info
 
+
+%pre
+# capture the device name of the first drive so it doesn't have to be hardcoded
+set $(list-harddrives);
+d1=$1 # This is the device of disk 1
+cat <<DRIVES | /usr/bin/tee /tmp/drives
+ignoredisk --only-use=$d1
+bootloader --append=" crashkernel=auto" --location=mbr
+clearpart --all --initlabel
+autopart --type=thinp
+DRIVES
+%end
+
+
 # authentication
 auth  --useshadow  --passalgo=sha512
 firewall --enabled --service=ssh
@@ -23,9 +37,7 @@ network  --bootproto=static --device=ens3 --gateway={{ host_ip }} --nameserver={
 network --hostname={{ vm.name }}
 
 # disks
-bootloader --append=" crashkernel=auto" --location=mbr
-clearpart --all --initlabel
-autopart --type=lvm
+%include /tmp/drives # populated in pre section above
 
 %packages
 @core

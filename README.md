@@ -1,5 +1,4 @@
-Ansible Role: KSbuilder
-=======================
+# Ansible Role: KSbuilder
 
 The idea of this role is to build a system based on a variables passed to the
 role in addition to a full binary ISO of an installation media and a kickstart
@@ -33,8 +32,7 @@ The result is a freshly built VM populated with the ssh key of the user running
 the role (for root login).  The longterm vision is that this role will be used 
 in other roles...
 
-Important Notes
----------------
+## Important Notes
 
 * This is currently developed to be used on a system locally.  In order to use
   it with Tower or AWX will take some refactoring
@@ -46,22 +44,20 @@ Important Notes
       sudo virsh destroy <vm.name>;
       sudo virsh undefine <vm.name> --remove-all-storage
 
-* My example playbook prompts the user for passwords to use in the VM...sort of
-  breaking unattended automation, but that's how I do it right now.
+* The use of multiple disks will require that your kickstart file handle this
+  appropriately.  For example, if you specify multiple disks, and your kickstart
+  uses `autopart`, your root LVM will be split across the disks and the mounting
+  of the disk for SSH key injection will fail.  See
+  `templates/example-server.cfg.j2` for an example of how I'm doing this.
 
-Requirements
-------------
+## Requirements
 
 I couldn't escape a few requirements:
 
 * **docker**:  Currently this role is spinning up a nginx container in order to
   house the kickstart file.  I considered doing things like building a custom
   ISO with the KS file, but figured I'd just spin up a container because,
-  selfishly I'm using them anyway.  But in addition to having docker installed
-  and configured, you'll need these packages:
-  * **python2-passlib**: *this is actually only necessary if you use the
-    "encrypt" capability of  vars_prompt in your playbook...*
-  * **python2-docker-py**
+  selfishly I'm using them anyway.
 * You'll need to have your libvirt environment configured to your liking.  I'm
   working on creating my own preferences in a separate role...to be continued...
 * A locally downloaded full binary ISO of the distribution you wish to install
@@ -71,25 +67,19 @@ I couldn't escape a few requirements:
   this role in other roles so those will have to put the template in the correct
   location?)
 
-Role Variables
---------------
+## Role Variables
 
 All of these variables should be considered **required** however, it will
 depend greatly on how you set up your kickstart file.  Just know that there is
 currently no sanity checking:
 
-* `ks_root_password`
-  * this is needed for the kickstart template.  You can provide it securely in
-    any number of ways such as by using a vault or by prompting for it in your
-    playbook (see example below).  Keep in mind that this is the root password for your new VM
-* `ks_ansible_password`
-  * this is only needed if you creata an ansible user in your kickstart
-    template.  I tend to do this.
 * `vm` *I've created a bit of a nested list here so that the variables can be
   used like `vm.name`*
   * `name`
     * the hostname of the new VM
-  * `disk` *the next layer of this nest*
+  * `disks` *the next layer of this nest*
+    * `boot_order`
+      * this is important when multiple disks are added (1-x)
     * `pool`
       * the libvirt storage pool the VM should be created in
     * `size`
@@ -118,76 +108,72 @@ currently no sanity checking:
     * I should work in the ability to specify the use of the container...in due
       time
 
-Example Playbook
-----------------
+## Example Playbook
 
 Playbook with configuration options specified:
 
 ```yaml
+---
 - hosts: localhost
   connection: local
-  vars_prompt:
-    - name: "ks_root_password"
-      prompt: "Enter password for new VM"
-      private: yes
-      encrypt: "sha512_crypt"
-      confirm: yes
-      salt_size: 7
-    - name: "ks_ansible_password"
-      prompt: "Enter password for ansible user in new VM"
-      private: yes
-      encrypt: "sha512_crypt"
-      confirm: yes
-      salt_size: 7
   roles:
     - role: KSbuilder
       vm:
-        name: minimal
-        disk:
-          pool: default
-          size: 15
-        vcpus: 2
-        memory: 512
-        ip: 192.168.1.2
+        name: minimal7.labtop.local # use the FQDN
+        disks:
+          - boot_order: 1
+            pool: default
+            size: 16
+          - boot_order: 2
+            pool: default
+            size: 100
+        vcpus: 4
+        memory: 12228
+        ip: 192.168.1.2 # this must be within the network specified below
         network:
           name: default # this is the libvirt network the vm will be on
       iso:
-        name: rhel-workstation-7.5-x86_64-dvd.iso
+        name: rhel-server-7.6-x86_64-dvd.iso
         location: /depot/isos # this must be local
       ks:
-        name: example-workstation.cfg.j2 # this must be in <role>/templates
+        name: example-server.cfg.j2
         use_container: yes
+      tags: KSbuilder
 
 ```
 
-To-do
------
+## Inclusion
 
-* I need to figure out the best way to "include" this role in other roles.  I'm
-  imagining this role as a part of other roles, such as to create a Satellite
-  server.  So look into [requirements.yml](https://docs.ansible.com/ansible/latest/reference_appendices/galaxy.html).
-  * **UPDATE:** I have included a fairly generic `meta/main.yml` file which
-    allows for something similar to:
+I envision this role being included in a larger project through the use of a
+`requirements.yml` file.  So here is an example of what you would need in your
+file:
 
-        ansible-galaxy install -p ./roles -r requirements.yml
+```yaml
+# get the KSbuilder role from github
+- src: https://github.com/thisdwhitley/ansible-role-KSbuilder.git
+  scm: git
+  name: KSbuilder
+```
 
-    with `requirements.yml` containing:
+Have the above in a `requirements.yml` file for your project would then allow
+you to "install" it (prior to use in some sort of setup script?) with:
 
-        ---
-        # get the builder role from github
-        - src: https://github.com/thisdwhitley/ansible-role-KSbuilder.git
-          scm: git
-          name: KSbuilder
+```bash
+ansible-galaxy install -p ./roles -r requirements.yml
+```
 
-References
-----------
+## Testing
+
+The purpose of this project does not lend itself to easy testing.  It is kind
+of crappy, sorry about that.
+
+## References
 
 * [rickmanley-nc's deploy in satellite repo](https://github.com/rickmanley-nc/satellite)
 * [bhirsch70's ansible-prvsn-libvirt-vm role](https://github.com/RedHatGov/Instant-Demo/tree/master/ansible-prvsn-libvirt-vm)
 * [toshywoshy's work](https://github.com/toshywoshy/ansible-role-vminstaller)
 
-License
--------
+## License
 
 Red Hat, the Shadowman logo, Ansible, and Ansible Tower are trademarks or
 registered trademarks of Red Hat, Inc. or its subsidiaries in the United
