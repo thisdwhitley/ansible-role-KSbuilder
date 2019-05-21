@@ -54,12 +54,15 @@
     --name {{ vm.name }} 
     --memory {{ vm.memory }} 
     --vcpus {{ vm.vcpus }} 
-    --disk size={{ vm.disk.size }},pool={{ vm.disk.pool }} 
+    {% for disk in vm.disks %} --disk boot_order={{ disk.boot_order }},size={{ disk.size }},pool={{ disk.pool }} {% endfor %}
     --network network={{ vm.network.name }} 
     --location {{ iso.location }}/{{ iso.name }} 
     --extra-args "ks=http://{{ host_ip }}/ks.cfg" 
     --os-type linux --noautoconsole
   become: yes
+
+#     --disk boot_order={{ vm.disks[0].boot_order }},size={{ vm.disks[0].size }},pool={{ vm.disks[0].pool }}
+
 
 - name: wait for the VM to build and be stopped
   virt:
@@ -91,7 +94,7 @@
 - name: get the disk location for the new VM
   become: yes
   shell: >
-    virsh domblklist {{ vm.name }} | awk '/qcow2/ {print $NF}'
+    virsh domblklist {{ vm.name }} | awk 'f{print $NF;f=0} /^-----/{f=1}'
   register: vm_disk
 
 - name: inject ssh key w/ virt-customize
